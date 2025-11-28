@@ -961,6 +961,53 @@ class JobScraper:
             print(f"LinkedIn Angola error: {e}")
             return []
     
+    def scrape_linkedin_remote(self, job_title: str) -> List[Dict]:
+        """Scrape LinkedIn for remote jobs - NO LOGIN NEEDED!"""
+        try:
+            # Public LinkedIn job search
+            url = "https://www.linkedin.com/jobs/search"
+            params = {
+                'keywords': job_title,
+                'location': 'Worldwide',
+                'f_WT': '2',  # Remote
+                'f_AL': 'true'  # Easy Apply
+            }
+            response = requests.get(url, headers=self.headers, params=params, timeout=10)
+            
+            if response.status_code == 200:
+                soup = BeautifulSoup(response.text, 'html.parser')
+                jobs = []
+                
+                # Find job cards
+                job_cards = soup.find_all('div', class_='base-card')[:30]
+                
+                for card in job_cards:
+                    try:
+                        title_elem = card.find('h3', class_='base-search-card__title')
+                        company_elem = card.find('h4', class_='base-search-card__subtitle')
+                        location_elem = card.find('span', class_='job-search-card__location')
+                        link_elem = card.find('a', class_='base-card__full-link')
+                        
+                        if title_elem and link_elem:
+                            jobs.append({
+                                'title': title_elem.text.strip(),
+                                'company': company_elem.text.strip() if company_elem else 'N/A',
+                                'location': location_elem.text.strip() if location_elem else 'Remote',
+                                'url': link_elem['href'],
+                                'salary': 'Not specified',
+                                'platform': 'LinkedIn Remote',
+                                'date_posted': 'Recent',
+                                'description': '',
+                                'has_easy_apply': True
+                            })
+                    except:
+                        continue
+                
+                return jobs
+        except Exception as e:
+            print(f"LinkedIn Remote error: {e}")
+            return []
+    
     def scrape_all_platforms(self, job_titles: List[str], mode: str = "remote") -> List[Dict]:
         """Scrape platforms based on search mode"""
         all_jobs = []
@@ -978,6 +1025,7 @@ class JobScraper:
         else:
             # INTERNATIONAL REMOTE PLATFORMS
             platforms = [
+                ('LinkedIn Remote', self.scrape_linkedin_remote),  # LinkedIn first!
                 ('RemoteOK', self.scrape_remoteok),
                 ('WeWorkRemotely', self.scrape_weworkremotely),
                 ('Remotive', self.scrape_remotive),
@@ -1819,55 +1867,92 @@ with tab1:
     
     # Display jobs with modern cards
     if st.session_state.jobs:
-        st.markdown(f"### 📋 {len(st.session_state.jobs)} Jobs Available")
+        st.markdown(f"### {len(st.session_state.jobs)} Jobs Available")
         
-        for i, job in enumerate(st.session_state.jobs[:20]):
-            st.markdown(f"""
-            <div class="job-card">
-                <div class="job-title">📌 {job['title']}</div>
-                <div class="job-company">🏢 {job['company']}</div>
-                <div class="job-meta">
-                    📍 {job['location']} • 💼 {job['platform']} • 💰 {job['salary']}
+        # Filter options
+        col1, col2 = st.columns(2)
+        with col1:
+            platform_filter = st.multiselect(
+                "Filter by Platform",
+                options=list(set([job['platform'] for job in st.session_state.jobs])),
+                default=[]
+            )
+        with col2:
+            show_limit = st.slider("Show jobs", 10, 100, 20)
+        
+        # Filter jobs
+        filtered_jobs = st.session_state.jobs
+        if platform_filter:
+            filtered_jobs = [job for job in st.session_state.jobs if job['platform'] in platform_filter]
+        
+        st.markdown(f"**Showing {min(len(filtered_jobs), show_limit)} of {len(filtered_jobs)} jobs**")
+        st.markdown("<br>", unsafe_allow_html=True)
+        
+        for i, job in enumerate(filtered_jobs[:show_limit]):
+            # Create nice job card
+            with st.container():
+                st.markdown(f"""
+                <div class="job-card">
+                    <div class="job-title">{job['title']}</div>
+                    <div class="job-company">{job['company']}</div>
+                    <div class="job-meta">
+                        {job['location']} • {job['platform']} • {job['salary']}
+                    </div>
                 </div>
-            </div>
-            """, unsafe_allow_html=True)
-            
-            col1, col2, col3 = st.columns([3, 1, 1])
-            
-            with col2:
-                if st.button("✅ Apply", key=f"apply_{i}", use_container_width=True):
-                    with st.spinner("Generating AI cover letter..."):
-                        cover_letter = st.session_state.ai.generate_cover_letter(
-                            job['title'], job['company'], job['description']
-                        )
+                """, unsafe_allow_html=True)
+                
+                col1, col2, col3 = st.columns([2, 2, 2])
+                
+                with col1:
+                    # DIRECT LINK BUTTON - Opens job directly!
+                    st.markdown(f"""
+                    <a href="{job['url']}" target="_blank" style="text-decoration: none;">
+                        <button style="
+                            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                            color: white;
+                            border: none;
+                            border-radius: 8px;
+                            padding: 10px 20px;
+                            font-weight: 600;
+                            cursor: pointer;
+                            width: 100%;
+                            font-size: 14px;
+                        ">
+                            Open Job Link
+                        </button>
+                    </a>
+                    """, unsafe_allow_html=True)
+                
+                with col2:
+                    # Generate cover letter
+                    if st.button("Generate Cover Letter", key=f"cover_{i}", use_container_width=True):
+                        with st.spinner("Generating..."):
+                            cover_letter = st.session_state.ai.generate_cover_letter(
+                                job['title'], job['company'], job.get('description', '')
+                            )
                         
+                        with st.expander("Cover Letter", expanded=True):
+                            st.text_area("Copy this:", cover_letter, height=250, key=f"cl_{i}")
+                            st.info("Copy this cover letter and use it when applying!")
+                
+                with col3:
+                    # Save job
+                    if st.button("Save Job", key=f"save_{i}", use_container_width=True):
                         application = {
                             'job': job,
-                            'cover_letter': cover_letter,
+                            'cover_letter': '',
                             'applied_at': datetime.now().isoformat(),
-                            'status': 'applied'
+                            'status': 'saved'
                         }
-                        
                         st.session_state.applications.append(application)
                         save_applications(st.session_state.applications)
-                        
-                        # Send email notification
-                        try:
-                            st.session_state.email.send_application_notification(
-                                job['title'], job['company']
-                            )
-                        except:
-                            pass
-                        
-                        st.success("✅ Applied!")
-                        st.balloons()
-            
-            with col3:
-                if st.button("🤖 Auto-Apply", key=f"auto_{i}", use_container_width=True):
-                    with st.spinner("🤖 Auto-applying..."):
-                        cover_letter = st.session_state.ai.generate_cover_letter(
-                            job['title'], job['company'], job['description']
-                        )
+                        st.success("Saved!")
+                
+                # Show URL for copying
+                with st.expander("Copy Link"):
+                    st.code(job['url'], language=None)
+                
+                st.markdown("<br>", unsafe_allow_html=True)
                         
                         # Simulate auto-apply
                         time.sleep(3)
