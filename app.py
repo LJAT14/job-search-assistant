@@ -1953,29 +1953,6 @@ with tab1:
                     st.code(job['url'], language=None)
                 
                 st.markdown("<br>", unsafe_allow_html=True)
-                        
-                        # Simulate auto-apply
-                        time.sleep(3)
-                        
-                        application = {
-                            'job': job,
-                            'cover_letter': cover_letter,
-                            'applied_at': datetime.now().isoformat(),
-                            'status': 'auto-applied'
-                        }
-                        
-                        st.session_state.applications.append(application)
-                        save_applications(st.session_state.applications)
-                        
-                        try:
-                            st.session_state.email.send_application_notification(
-                                job['title'], job['company']
-                            )
-                        except:
-                            pass
-                        
-                        st.success("🤖 Auto-applied!")
-                        st.info("📧 Check email for confirmation!")
 
 # TAB 2: Applications
 with tab2:
