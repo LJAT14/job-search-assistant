@@ -1,0 +1,176 @@
+# ===================================
+# JOB BOT PRO - .gitignore
+# ===================================
+
+# SENSITIVE FILES - NEVER COMMIT!
+.env
+*.env
+.env.local
+.env.production
+secrets.toml
+.streamlit/secrets.toml
+
+# API KEYS & CREDENTIALS
+**/api_keys.txt
+**/credentials.json
+**/config.json
+linkedin_credentials.txt
+
+# PERSONAL DATA
+data/*.docx
+data/*.pdf
+data/cv/*
+data/resume/*
+logs/*.json
+logs/*.log
+linkedin_applications_*.json
+
+# PYTHON
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+*.manifest
+*.spec
+pip-log.txt
+pip-delete-this-directory.txt
+
+# VIRTUAL ENVIRONMENTS
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+.venv/
+
+# JUPYTER NOTEBOOK
+.ipynb_checkpoints
+*.ipynb
+
+# PYTEST
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.nox/
+
+# MYPY
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# PYRE
+.pyre/
+
+# PYTYPE
+.pytype/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# STREAMLIT
+.streamlit/config.toml
+
+# SELENIUM
+chromedriver.exe
+geckodriver.exe
+*.exe
+selenium-debug.log
+selenium.log
+
+# LOGS
+*.log
+logs/
+log/
+
+# TEMPORARY FILES
+*.tmp
+*.temp
+temp/
+tmp/
+
+# DATABASE
+*.db
+*.sqlite
+*.sqlite3
+
+# BACKUP FILES
+*.bak
+*.backup
+*~
+
+# OS FILES
+Thumbs.db
+.DS_Store
+desktop.ini
+
+# ARCHIVES
+*.zip
+*.tar.gz
+*.rar
+*.7z
+
+# CERTIFICATES
+*.pem
+*.key
+*.crt
+*.cer
+
+# LARGE FILES (optional)
+# Uncomment if you have large datasets
+# *.csv
+# *.xlsx
+# *.parquet
+
+# NODE MODULES (if using frontend)
+node_modules/
+package-lock.json
+yarn.lock
+
+# ===================================
+# DEPLOYMENT SPECIFIC
+# ===================================
+
+# Local development only
+dev/
+local/
+scratch/
+
+# Test files with sensitive data
+test_credentials.py
+test_api.py
+
+# ===================================
+# ALLOW THESE FILES
+# ===================================
+
+# Force include important files
+!requirements.txt
+!.gitignore
+!README.md
+!.streamlit/config.toml.example
+!data/.gitkeep
+!logs/.gitkeep
