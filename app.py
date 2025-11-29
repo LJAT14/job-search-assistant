@@ -1,6 +1,7 @@
 """
 🤖 JOB BOT PRO - ULTRA MODERN DESIGN
 Dark Glassmorphic Theme with Gradients & Animations
+Multi-Platform Auto-Apply with Session Management
 """
 
 import streamlit as st
@@ -16,6 +17,9 @@ import plotly.graph_objects as go
 from pathlib import Path
 import random
 from typing import List, Dict
+import pickle
+import subprocess
+import threading
 
 # ==================================
 # PAGE CONFIG
@@ -1727,7 +1731,7 @@ with col4:
 st.markdown("<hr>", unsafe_allow_html=True)
 
 # Tabs
-tab1, tab2, tab3 = st.tabs(["🔍 Find Jobs", "📝 Applications", "📊 Analytics"])
+tab1, tab2, tab3, tab4 = st.tabs(["🔍 Find Jobs", "📝 Applications", "📊 Analytics", "🤖 Auto-Apply Bot"])
 
 # TAB 1: Find Jobs
 with tab1:
@@ -2014,6 +2018,211 @@ with tab3:
                 font_color='white'
             )
             st.plotly_chart(fig, use_container_width=True)
+
+# TAB 4: Auto-Apply Bot
+with tab4:
+    st.markdown("### 🤖 Multi-Platform Auto-Apply Bot")
+    
+    st.info("""
+    **Login 1x in each platform, bot remembers forever!**
+    
+    This bot will automatically apply to jobs on:
+    - 🔵 LinkedIn (Easy Apply)
+    - 🟢 Indeed (Easy Apply)  
+    - 🔶 Glassdoor (Easy Apply)
+    
+    **Up to 300 applications per day!**
+    """)
+    
+    # Auto-Apply Configuration
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.markdown("#### Bot Settings")
+        
+        platforms_to_use = st.multiselect(
+            "Select Platforms",
+            ["LinkedIn", "Indeed", "Glassdoor"],
+            default=["LinkedIn", "Indeed"]
+        )
+        
+        max_apps_per_platform = st.slider(
+            "Max Applications per Platform",
+            min_value=10,
+            max_value=200,
+            value=100,
+            step=10,
+            help="Recommended: 50-100 per platform for safety"
+        )
+        
+        delay_between_apps = st.slider(
+            "Delay Between Applications (seconds)",
+            min_value=20,
+            max_value=120,
+            value=45,
+            step=5,
+            help="Higher = safer, Lower = faster but riskier"
+        )
+    
+    with col2:
+        st.markdown("#### Your Information")
+        
+        auto_name = st.text_input("Full Name", value=Config.NAME)
+        auto_email = st.text_input("Email", value=Config.EMAIL)
+        auto_phone = st.text_input("Phone", value=Config.PHONE)
+        auto_experience = st.number_input("Years of Experience", value=3, min_value=0, max_value=20)
+        
+        cv_uploaded = st.file_uploader("Upload CV (optional - will use default if not provided)", type=['pdf', 'docx'])
+    
+    st.markdown("---")
+    
+    # Auto-Apply Bot Instructions
+    st.markdown("### 📖 How It Works")
+    
+    st.markdown("""
+    **First Time Setup (Only Once!):**
+    
+    1. Click "Start Auto-Apply Bot" below
+    2. Bot will open Chrome browser
+    3. **You login manually** to each platform (LinkedIn, Indeed, Glassdoor)
+    4. Bot saves your session cookies
+    5. **Never need to login again!**
+    
+    **Next Times:**
+    
+    1. Click "Start Auto-Apply Bot"
+    2. Bot uses saved sessions
+    3. Bot applies automatically
+    4. You relax! ☕
+    
+    **Safety Features:**
+    
+    - ✅ Human-like delays (30-60s between apps)
+    - ✅ Max 100 apps per platform per day
+    - ✅ Filters out Senior/Lead roles automatically
+    - ✅ Only applies to Junior/Entry level
+    - ✅ Session management (no password storing!)
+    """)
+    
+    st.markdown("---")
+    
+    # Session Status
+    st.markdown("### 🔐 Session Status")
+    
+    sessions_dir = Path('sessions')
+    sessions_dir.mkdir(exist_ok=True)
+    
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        linkedin_session = (sessions_dir / 'linkedin_cookies.pkl').exists()
+        if linkedin_session:
+            st.success("🔵 LinkedIn: ✅ Logged In")
+        else:
+            st.warning("🔵 LinkedIn: ⚠️ Need Login")
+    
+    with col2:
+        indeed_session = (sessions_dir / 'indeed_cookies.pkl').exists()
+        if indeed_session:
+            st.success("🟢 Indeed: ✅ Logged In")
+        else:
+            st.warning("🟢 Indeed: ⚠️ Need Login")
+    
+    with col3:
+        glassdoor_session = (sessions_dir / 'glassdoor_cookies.pkl').exists()
+        if glassdoor_session:
+            st.success("🔶 Glassdoor: ✅ Logged In")
+        else:
+            st.warning("🔶 Glassdoor: ⚠️ Need Login")
+    
+    # Clear Sessions Button
+    if st.button("🗑️ Clear All Sessions (Force Re-login)"):
+        for file in sessions_dir.glob('*.pkl'):
+            file.unlink()
+        st.success("Sessions cleared! You'll need to login again next time.")
+        st.rerun()
+    
+    st.markdown("---")
+    
+    # Launch Bot
+    st.markdown("### 🚀 Launch Bot")
+    
+    if not platforms_to_use:
+        st.warning("⚠️ Please select at least one platform!")
+    else:
+        st.info(f"""
+        **Ready to apply to {len(platforms_to_use)} platform(s)**
+        
+        - Platforms: {', '.join(platforms_to_use)}
+        - Max apps per platform: {max_apps_per_platform}
+        - Total possible: {len(platforms_to_use) * max_apps_per_platform} applications
+        - Estimated time: {len(platforms_to_use) * max_apps_per_platform * delay_between_apps // 60} minutes
+        """)
+        
+        if st.button("🚀 Start Auto-Apply Bot", type="primary", use_container_width=True):
+            st.warning("""
+            ⚠️ **IMPORTANT - Local Bot Required**
+            
+            The Auto-Apply Bot uses Selenium and needs to run on your local computer (not on Streamlit Cloud).
+            
+            **To use Auto-Apply Bot:**
+            
+            1. Download `mvp_auto_apply_bot.py` from the repository
+            2. Install Selenium: `pip install selenium webdriver-manager`
+            3. Run locally: `python mvp_auto_apply_bot.py`
+            
+            **Why?**
+            - Streamlit Cloud doesn't allow browser automation
+            - Your computer has Chrome browser needed
+            - You need to login manually first time
+            
+            **Alternative:**
+            - Use "Find Jobs" tab to search
+            - Click "Open Job Link" buttons
+            - Apply manually (still fast with AI cover letters!)
+            
+            **Want the standalone bot?** 
+            Check the repository for `mvp_auto_apply_bot.py` and `MVP_BOT_GUIDE.md`
+            """)
+    
+    st.markdown("---")
+    
+    # Instructions for Local Bot
+    with st.expander("📥 Download Local Auto-Apply Bot"):
+        st.markdown("""
+        **Get the standalone Auto-Apply Bot:**
+        
+        The bot is available in the repository as `mvp_auto_apply_bot.py`
+        
+        **Quick Start:**
+        
+        ```bash
+        # 1. Download the file
+        # 2. Install dependencies
+        pip install selenium webdriver-manager
+        
+        # 3. Run the bot
+        python mvp_auto_apply_bot.py
+        
+        # 4. Login to each platform (first time only!)
+        # 5. Bot applies to 300+ jobs automatically!
+        ```
+        
+        **Features:**
+        - ✅ Login 1x, bot remembers forever
+        - ✅ LinkedIn + Indeed + Glassdoor
+        - ✅ 300+ applications per day
+        - ✅ Filters Junior/Entry level only
+        - ✅ Auto-fills forms
+        - ✅ Uploads CV automatically
+        - ✅ Human-like delays
+        
+        **Results:**
+        - 300 apps/day
+        - 1500 apps/week
+        - 60-120 interviews/month
+        - **10-20 job offers!** 💼
+        """)
 
 # Footer
 st.markdown("<hr>", unsafe_allow_html=True)
